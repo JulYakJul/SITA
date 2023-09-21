@@ -27,11 +27,6 @@ namespace SITA
         // Счетчик подключенных клиентов
         int countClient = 0;
 
-
-        //1. Получение запроса на авторизацию, возможность согласиться или отклонить
-        //2. Принимает BPM и отсылает подтверждение получения
-        //3? Отправляет BSM
-
         public void StartServer()
         {
             // Предотвратим повторный запуск сервера
@@ -53,7 +48,6 @@ namespace SITA
                     Console.WriteLine("Сервер запущен");
 
                     string bsmFilePath = "путь_к_вашему_файлу.bsm";
-                    // Вам нужно передать значение num в метод SendBSMToTCPListener
                     SendBSMToTCPListener(bsmFilePath);
 
                 }
@@ -115,9 +109,9 @@ namespace SITA
                         stream = Encoding.Default.GetString(buffer);
                         string[] messages = stream.Split(new[] { "\r\n\r\n", "\r\n\n" }, StringSplitOptions.RemoveEmptyEntries);
 
-                        foreach (string message in messages)
+                        foreach (string line in messages)
                         {
-                            if (message.Contains("LOGIN_REQUEST"))
+                            if (line.Contains("LOGIN_REQUEST"))
                             {
                                 bool authorize = random.Next(4) == 0;
                                 string responseType = authorize ? "LOGIN_ACCEPT" : "LOGIN_REJECT";
@@ -134,14 +128,14 @@ namespace SITA
                                 string jsonResponse = JsonConvert.SerializeObject(loginResponse);
                                 SendToClients(jsonResponse, TCPListenerClient);
                             }
-                            else if (message.Contains("BPM"))
+                            else if (line.Contains("BPM"))
                             {
                                 TCPListenerClient.Connect(IPAddress.Parse(Program.ipClientTCP), Program.portClientTCP);
                                 // подтверждение получения BPM обратно клиенту.
                                 SendToClients("BPM_ACK", TCPListenerClient);
 
-                                // отправка BSM на сервер TCPListener, передавая num
-                                SendBSMToTCPListener(message);
+                                // отправка BSM на сервер TCPListener, передавая путь к файлу
+                                //SendBSMToTCPListener(line); // Предполагается, что line содержит путь к файлу
                             }
                         }
                     }
@@ -158,7 +152,6 @@ namespace SITA
             }
         }
 
-
         // Метод для отправки BSM на сервер TCPListener
         public void SendBSMToTCPListener(string filePath)
         {
@@ -170,7 +163,7 @@ namespace SITA
                 // Отправка массива байтов на сервер TCPListener
                 NetworkStream ns = TCPListenerClient.GetStream();
                 ns.Write(fileBytes, 0, fileBytes.Length);
-                // сообщение о том, что отправка завершена
+
                 SendToClients("BSM_SENT", TCPListenerClient);
 
                 Console.WriteLine($"Отправлен BSM размером {fileBytes.Length} байт");
@@ -180,6 +173,8 @@ namespace SITA
                 Console.WriteLine($"Ошибка при отправке BSM: {ex.ToString()}");
             }
         }
+
+
 
         public void SendToClients(string text, TcpClient tcpClient)
         {
