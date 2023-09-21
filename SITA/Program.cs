@@ -7,10 +7,9 @@ namespace SITA
     {
         // Количество принимаемых подключений к серверу
         public static int MAXNUMCLIENTS;
+
         public static string? ipClientTCP;
-        public static string? SITAIPClient;
         public static int portClientTCP;
-        public static int SITAportClient;
         public static string? TCPLIPClient;
         public static int TCPLportClient;
         public const int tcpPort = 8080;
@@ -25,8 +24,6 @@ namespace SITA
             ipClientTCP = config["ipAddressTCP"];
             portClientTCP = Convert.ToInt32(config["portTCP"]);
             MAXNUMCLIENTS = Convert.ToInt32(config["maxCountClients"]);
-            SITAIPClient = config["SITAAdress"];
-            SITAportClient = Convert.ToInt32(config["SITAPort"]);
 
             SITAConnection sitaConnection = new();
             sitaConnection.StartServer();
