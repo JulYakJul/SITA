@@ -6,13 +6,24 @@ using Newtonsoft.Json;
 
 namespace SITA
 {
-    internal class SITAConnection
+    public class SITAConnection
     {
-        // Высокоуровневая надстройка для прослушивающего сокета
-        TcpListener server;
+        private readonly TcpListener _tcpListener;
 
-        TcpClient[] Clients = new TcpClient[Program.MAXNUMCLIENTS];
-        TcpClient TCPListenerClient = new();
+        private readonly Random _random;
+
+        private readonly TcpClient[] _clients;
+
+        private readonly TcpClient _client;
+
+
+        public SITAConnection()
+        {
+            _tcpListener = new TcpListener(IPAddress.Any, Program.SITA_TCP_LISTENER_PORT);
+            _random = new Random();
+            _clients = new TcpClient[Program.MAX_COUNT_CLIENTS];
+            _client = new();
+        }
 
         bool stopNetwork;
 
@@ -21,36 +32,27 @@ namespace SITA
 
         public void StartServer()
         {
-            // Предотвратим повторный запуск сервера
-            if (server == null)
+            // Блок перехвата исключений на случай запуска одновременно
+            // двух серверных приложений с одинаковым портом.
+            try
             {
-                // Блок перехвата исключений на случай запуска одновременно
-                // двух серверных приложений с одинаковым портом.
-                try
-                {
-                    stopNetwork = false;
-                    countClient = 0;
+                stopNetwork = false;
+                countClient = 0;
 
-                    server = new TcpListener(IPAddress.Any, Program.PORT_LISTENER_TCP);
-                    server.Start();
+                _tcpListener.Start();
 
-                    Thread acceptThread = new(AcceptClients);
-                    acceptThread.Start();
+                Thread acceptThread = new(AcceptClients);
+                acceptThread.Start();
 
-                    Console.WriteLine("Сервер запущен");
+                Console.WriteLine("Сервер запущен");
 
-                    SendBSMToTCPListener();
-
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Не удалось запустить сервер");
-                    Console.WriteLine(ex.ToString());
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Не удалось запустить сервер");
+                Console.WriteLine(ex.ToString());
             }
         }
-
-
 
         // Принимаем запросы клиентов на подключение и
         // привязываем к каждому подключившемуся клиенту 
@@ -62,9 +64,11 @@ namespace SITA
             {
                 try
                 {
-                    this.Clients[countClient] = server.AcceptTcpClient();
+                    _clients[countClient] = _tcpListener.AcceptTcpClient();
+
                     Thread readThread = new(ReceiveRun);
                     readThread.Start(countClient);
+
                     Console.WriteLine("Подключился клиент");
                     countClient++;
                 }
@@ -74,15 +78,12 @@ namespace SITA
                     Console.WriteLine(ex.ToString());
                 }
 
-                if (countClient == Program.MAXNUMCLIENTS || stopNetwork == true)
+                if (countClient == Program.MAX_COUNT_CLIENTS || stopNetwork == true)
                 {
                     break;
                 }
             }
         }
-
-        // Генератор случайных чисел
-        Random random = new Random();
 
         public void ReceiveRun(object num)
         {
@@ -91,11 +92,11 @@ namespace SITA
                 try
                 {
                     string stream = null;
-                    NetworkStream networkStream = Clients[(int)num].GetStream();
+                    NetworkStream networkStream = _clients[(int)num].GetStream();
 
                     while (networkStream.DataAvailable == true)
                     {
-                        byte[] buffer = new byte[Clients[(int)num].Available];
+                        byte[] buffer = new byte[_clients[(int)num].Available];
                         networkStream.Read(buffer, 0, buffer.Length);
                         stream = Encoding.Default.GetString(buffer);
                         string[] messages = stream.Split(new[] { "\r\n\r\n", "\r\n\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -104,7 +105,7 @@ namespace SITA
                         {
                             if (line.Contains("LOGIN_REQUEST"))
                             {
-                                bool authorize = random.Next(4) == 0;
+                                bool authorize = _random.Next(4) == 0;
                                 string responseType = authorize ? "LOGIN_ACCEPT" : "LOGIN_REJECT";
 
                                 LoginResponse loginResponse = new LoginResponse
@@ -117,13 +118,13 @@ namespace SITA
                                 };
 
                                 string jsonResponse = JsonConvert.SerializeObject(loginResponse);
-                                SendToClients(jsonResponse, TCPListenerClient);
+                                SendToClients(jsonResponse, _client);
                             }
                             else if (line.Contains("BPM"))
                             {
-                                TCPListenerClient.Connect(IPAddress.Parse(Program.IP_TCP_CLIENT), Program.PORT_TCP_CLIENT);
+                                _client.Connect(IPAddress.Parse(Program.IP_TCP_CLIENT), Program.PORT_TCP_CLIENT);
                                 // подтверждение получения BPM обратно клиенту.
-                                SendToClients("BPM_ACK", TCPListenerClient);
+                                SendToClients("BPM_ACK", _client);
 
                                 // отправка BSM на сервер TCPListener, передавая путь к файлу
                                 //SendBSMToTCPListener(line); // Предполагается, что line содержит путь к файлу
@@ -152,10 +153,10 @@ namespace SITA
                 byte[] fileBytes = Encoding.UTF8.GetBytes("BSM\r\n.V/1LLED\r\n.F/DP6824/01FEB/SVO/Y\r\n.N/0425954224001\r\n.S/Y/27C/C/086//N//A\r\n.W/K/1/10\r\n.P/1FAIZOV/YAKUB\r\n.L/IR7UXX\r\nENDBSM");
 
                 // Отправка массива байтов на сервер TCPListener
-                NetworkStream ns = TCPListenerClient.GetStream();
+                NetworkStream ns = _client.GetStream();
                 ns.Write(fileBytes, 0, fileBytes.Length);
 
-                SendToClients("BSM_SENT", TCPListenerClient);
+                SendToClients("BSM_SENT", _client);
 
                 Console.WriteLine($"Отправлен BSM размером {fileBytes.Length} байт");
             }
