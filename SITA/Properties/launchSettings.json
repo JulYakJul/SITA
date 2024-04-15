@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SITA": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

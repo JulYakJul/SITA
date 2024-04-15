@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO;
 using Newtonsoft.Json;
-//using FluentFTP;
-//using FluentFTP.Helpers;
-
-//using System.Net.WebClient;
 
 namespace SITA
 {
@@ -19,7 +10,7 @@ namespace SITA
         // Высокоуровневая надстройка для прослушивающего сокета
         TcpListener server;
 
-        TcpClient[] clients = new TcpClient[Program.MAXNUMCLIENTS];
+        TcpClient[] Clients = new TcpClient[Program.MAXNUMCLIENTS];
         TcpClient TCPListenerClient = new();
 
         bool stopNetwork;
@@ -39,7 +30,7 @@ namespace SITA
                     stopNetwork = false;
                     countClient = 0;
 
-                    server = new TcpListener(IPAddress.Any, Program.tcpPort);
+                    server = new TcpListener(IPAddress.Any, Program.PORT_LISTENER_TCP);
                     server.Start();
 
                     Thread acceptThread = new(AcceptClients);
@@ -71,7 +62,7 @@ namespace SITA
             {
                 try
                 {
-                    this.clients[countClient] = server.AcceptTcpClient();
+                    this.Clients[countClient] = server.AcceptTcpClient();
                     Thread readThread = new(ReceiveRun);
                     readThread.Start(countClient);
                     Console.WriteLine("Подключился клиент");
@@ -100,11 +91,11 @@ namespace SITA
                 try
                 {
                     string stream = null;
-                    NetworkStream networkStream = clients[(int)num].GetStream();
+                    NetworkStream networkStream = Clients[(int)num].GetStream();
 
                     while (networkStream.DataAvailable == true)
                     {
-                        byte[] buffer = new byte[clients[(int)num].Available];
+                        byte[] buffer = new byte[Clients[(int)num].Available];
                         networkStream.Read(buffer, 0, buffer.Length);
                         stream = Encoding.Default.GetString(buffer);
                         string[] messages = stream.Split(new[] { "\r\n\r\n", "\r\n\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -130,7 +121,7 @@ namespace SITA
                             }
                             else if (line.Contains("BPM"))
                             {
-                                TCPListenerClient.Connect(IPAddress.Parse(Program.ipClientTCP), Program.portClientTCP);
+                                TCPListenerClient.Connect(IPAddress.Parse(Program.IP_TCP_CLIENT), Program.PORT_TCP_CLIENT);
                                 // подтверждение получения BPM обратно клиенту.
                                 SendToClients("BPM_ACK", TCPListenerClient);
 
@@ -170,7 +161,7 @@ namespace SITA
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при отправке BSM: {ex.ToString()}");
+                Console.WriteLine($"Ошибка при отправке BSM: {ex}");
             }
         }
 
