@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
@@ -38,7 +39,6 @@ namespace SITA
 
                     Console.WriteLine("Сервер запущен");
 
-                    string bsmFilePath = "путь_к_вашему_файлу.bsm";
                     SendBSMToTCPListener(bsmFilePath);
 
                 }
@@ -144,12 +144,12 @@ namespace SITA
         }
 
         // Метод для отправки BSM на сервер TCPListener
-        public void SendBSMToTCPListener(string filePath)
+        public void SendBSMToTCPListener()
         {
             try
             {
                 // Чтение содержимого файла в виде массива байтов
-                byte[] fileBytes = File.ReadAllBytes(filePath);
+                byte[] fileBytes = Encoding.UTF8.GetBytes("BSM\r\n.V/1LLED\r\n.F/DP6824/01FEB/SVO/Y\r\n.N/0425954224001\r\n.S/Y/27C/C/086//N//A\r\n.W/K/1/10\r\n.P/1FAIZOV/YAKUB\r\n.L/IR7UXX\r\nENDBSM");
 
                 // Отправка массива байтов на сервер TCPListener
                 NetworkStream ns = TCPListenerClient.GetStream();
@@ -164,8 +164,6 @@ namespace SITA
                 Console.WriteLine($"Ошибка при отправке BSM: {ex}");
             }
         }
-
-
 
         public void SendToClients(string text, TcpClient tcpClient)
         {
