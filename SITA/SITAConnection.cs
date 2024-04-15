@@ -39,7 +39,7 @@ namespace SITA
 
                     Console.WriteLine("Сервер запущен");
 
-                    SendBSMToTCPListener(bsmFilePath);
+                    SendBSMToTCPListener();
 
                 }
                 catch (Exception ex)
