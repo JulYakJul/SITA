@@ -1,12 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
-using SITA.MessageLogic.Models;
+﻿using SITA.MessageLogic.Models;
 using SITA.MessageLogic;
-using System;
-using System.Data.Common;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using SITA.MessageLogic.Models.Enums;
 
 namespace SITA
@@ -126,7 +120,6 @@ namespace SITA
                                 }.GetByteData());
                                 await Console.Out.WriteLineAsync("BSIS<-BSIS");
                             }
-
                         });
                     }
                 }
