@@ -122,7 +122,13 @@ namespace SITA
                             }
                             else if (line.Contains("BPM"))
                             {
-                                _client.Connect(IPAddress.Parse(Program.IP_TCP_CLIENT), Program.PORT_TCP_CLIENT);
+                                if (!_client.Connected)
+                                {
+                                    _client.Connect(IPAddress.Parse(Program.IP_TCP_CLIENT), Program.PORT_TCP_CLIENT);
+                                }
+
+                                Console.WriteLine("Отправляем в TCP");
+
                                 // подтверждение получения BPM обратно клиенту.
                                 SendToClients("BPM_ACK", _client);
 
