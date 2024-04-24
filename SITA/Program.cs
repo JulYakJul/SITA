@@ -1,42 +1,152 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
+using SITA.MessageLogic.Models;
+using SITA.MessageLogic;
+using System;
 using System.Data.Common;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using SITA.MessageLogic.Models.Enums;
 
 namespace SITA
 {
     static class Program
     {
-        // Количество принимаемых подключений к серверу
-        public static int MAX_COUNT_CLIENTS;
-        public static int PORT_TCP_CLIENT;
+        private static Task? tcpCM;
+        private static readonly Random rnd = new();
+        private static ByteBuffer buffer = new();
 
-        public static int SITA_TCP_LISTENER_PORT;
-        public static string IP_TCP_CLIENT;
+        /// <summary>
+        /// Источник токенов для остановки запущенного экземпляра системы при перезапуске
+        /// </summary>
+        private static CancellationTokenSource _сancellationTokenSource { get; set; } = new();
 
         static void Main(string[] args)
         {
             try
             {
-                var directory = Directory.GetCurrentDirectory();
-                var config = new ConfigurationBuilder()
-                    .SetBasePath(directory)
-                    .AddJsonFile($"appsettings.json", true, true).Build();
+                _сancellationTokenSource.Cancel();
+                _сancellationTokenSource = new();
 
-                PORT_TCP_CLIENT = Convert.ToInt32(Environment.GetEnvironmentVariable("PORT_TCP_CLIENT") ?? config["PORT_TCP_CLIENT"]);
-                IP_TCP_CLIENT = Environment.GetEnvironmentVariable("IP_TCP_CLIENT") ?? config["IP_TCP_CLIENT"];
-                MAX_COUNT_CLIENTS = Convert.ToInt32(Environment.GetEnvironmentVariable("MAX_COUNT_CLIENTS") ?? config["MAX_COUNT_CLIENTS"]);
-                SITA_TCP_LISTENER_PORT = Convert.ToInt32(Environment.GetEnvironmentVariable("SITA_TCP_LISTENER_PORT") ?? config["SITA_TCP_LISTENER_PORT"]);
+                if (tcpCM != null)
+                    tcpCM.Wait();
 
-                SITAConnection sitaConnection = new();
-                Thread threadTCP = new(() => sitaConnection.StartServer());
+                TCPConnectionManager tcpConnectionManager = new(_сancellationTokenSource.Token);
 
-                threadTCP.Start();
-                threadTCP.Join();
+                tcpConnectionManager.AddTCPServer(7991, HandleTCPListener91);
+                tcpConnectionManager.AddTCPServer(7992, HandleTCPListener92);
+
+                tcpCM = Task.Run(() => tcpConnectionManager.StartServer());
+
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.ReadLine();
             }
+        }
+
+        static async Task HandleTCPListener91(TcpClient client)
+        {
+            while (!_сancellationTokenSource.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    // Поток данных, которые мы получаем с клиентов
+                    NetworkStream networkStream = client.GetStream();
+
+                    while (networkStream.DataAvailable)
+                    {
+                        ReadStream(client).ForEach(async message =>
+                        {
+                            await Console.Out.WriteLineAsync($"BISI->{message.ContentText}");
+                            if (message == null && message.MessageType == MessageType.LOGIN_RQST)
+                            {
+                                await SendMessageAsync(client, new SITAMessage()
+                                {
+                                    MessageType = (rnd.Next(0, 2) % 2 == 0 ? MessageType.LOGIN_ACCEPT : MessageType.LOGIN_REJECT),
+                                    ContentText = ""
+
+                                }.GetByteData());
+                                await Console.Out.WriteLineAsync("BSIS<-BSIS");
+                            }
+                            else
+                            {
+                                await SendMessageAsync(client, new SITAMessage()
+                                {
+                                    MessageType = MessageType.STATUS,
+                                    ContentText = ""
+
+                                }.GetByteData());
+                                await Console.Out.WriteLineAsync("BSIS<-BSIS");
+                            }
+
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        static async Task HandleTCPListener92(TcpClient client)
+        {
+            while (!_сancellationTokenSource.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    // Поток данных, которые мы получаем с клиентов
+                    NetworkStream networkStream = client.GetStream();
+
+                    while (networkStream.DataAvailable)
+                    {
+                        ReadStream(client).ForEach(async message =>
+                        {
+                            await Console.Out.WriteLineAsync($"BISI->{message.ContentText}");
+                            if (message == null && message.MessageType == MessageType.LOGIN_RQST)
+                            {
+                                await SendMessageAsync(client, new SITAMessage()
+                                {
+                                    MessageType = (rnd.Next(0, 2) % 2 == 0 ? MessageType.LOGIN_ACCEPT : MessageType.LOGIN_REJECT),
+                                    ContentText = ""
+
+                                }.GetByteData());
+                                await Console.Out.WriteLineAsync("BSIS<-BSIS");
+                            }
+                            else
+                            {
+                                await SendMessageAsync(client, new SITAMessage()
+                                {
+                                    MessageType = MessageType.STATUS,
+                                    ContentText = ""
+
+                                }.GetByteData());
+                                await Console.Out.WriteLineAsync("BSIS<-BSIS");
+                            }
+
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        static async Task SendMessageAsync(TcpClient client, byte[] message)
+        {
+            NetworkStream ns = client.GetStream();
+            await ns.WriteAsync(message);
+        }
+
+        static List<SITAMessage> ReadStream(TcpClient client)
+        {
+            NetworkStream networkStream = client.GetStream();
+            return MessageParser.Parse(networkStream, buffer, client.Available);
         }
     }
 }
