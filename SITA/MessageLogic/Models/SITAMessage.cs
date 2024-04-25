@@ -43,7 +43,7 @@ namespace SITA.MessageLogic.Models
                 if (_isChanged || _appId == null)
                 {
                     _isChanged = false;
-                    ApplicationIdentify = "LHR_BRS";
+                    ApplicationIdentify = "LHR_BSI";
                     _appId = ApplicationIdentify.Select(x => (byte)x).ToArray();
                 }
                 return _appId;
