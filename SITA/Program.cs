@@ -35,6 +35,8 @@ namespace SITA
                 tcpConnectionManager.AddTCPServer(7992, HandleTCPListener92);
 
                 tcpCM = Task.Run(() => tcpConnectionManager.StartServer());
+
+                Console.WriteLine("Start");
             }
             catch (Exception ex)
             {
@@ -57,18 +59,18 @@ namespace SITA
                     {
                         ReadStream(client, buffer91).ForEach(async message =>
                         {
-                            await Console.Out.WriteLineAsync($"BISI->{message.MessageType.ToString()} {message.ContentText}");
+                            await Console.Out.WriteLineAsync($"BSIS91->{message.MessageType.ToString()} {message.ContentText} " + DateTime.Now);
                             if (message != null && message.MessageType == MessageType.LOGIN_RQST)
                             {
                                 var responce = new SITAMessage()
                                 {
-                                    MessageType = (rnd.Next(0, 2) % 2 == 0 ? MessageType.LOGIN_ACCEPT : MessageType.LOGIN_REJECT),
+                                    MessageType = (rnd.Next(0, 3) % 2 == 0 ? MessageType.LOGIN_REJECT : MessageType.LOGIN_REJECT),
                                     ContentText = ""
 
                                 };
 
                                 await SendMessageAsync(client, responce.GetByteData());
-                                await Console.Out.WriteLineAsync($"BSIS<-{responce.MessageType.ToString()} {responce.ContentText}");
+                                await Console.Out.WriteLineAsync($"BSIS91<-{responce.MessageType.ToString()} {responce.ContentText} " + DateTime.Now);
                             }
                             else
                             {
@@ -80,7 +82,7 @@ namespace SITA
                                 };
 
                                 await SendMessageAsync(client, responce.GetByteData());
-                                await Console.Out.WriteLineAsync($"BSIS<-{responce.MessageType.ToString()} {responce.ContentText}");
+                                await Console.Out.WriteLineAsync($"BSIS91<-{responce.MessageType.ToString()} {responce.ContentText} " + DateTime.Now);
                             }
 
                         });
@@ -106,7 +108,7 @@ namespace SITA
                     {
                         ReadStream(client, buffer92).ForEach(async message =>
                         {
-                            await Console.Out.WriteLineAsync($"BISI->{message.MessageType.ToString()} {message.ContentText}");
+                            await Console.Out.WriteLineAsync($"BSIS92->{message.MessageType.ToString()} {message.ContentText} " + DateTime.Now);
                             if (message != null && message.MessageType == MessageType.LOGIN_RQST)
                             {
                                 var responce = new SITAMessage()
@@ -117,7 +119,7 @@ namespace SITA
                                 };
 
                                 await SendMessageAsync(client, responce.GetByteData());
-                                await Console.Out.WriteLineAsync($"BSIS<-{responce.MessageType.ToString()} {responce.ContentText}");
+                                await Console.Out.WriteLineAsync($"BSIS92<-{responce.MessageType.ToString()} {responce.ContentText} " + DateTime.Now);
                             }
                             else
                             {
@@ -129,7 +131,7 @@ namespace SITA
                                 };
 
                                 await SendMessageAsync(client, responce.GetByteData());
-                                await Console.Out.WriteLineAsync($"BSIS<-{responce.MessageType.ToString()} {responce.ContentText}");
+                                await Console.Out.WriteLineAsync($"BSIS92<-{responce.MessageType.ToString()} {responce.ContentText} " + DateTime.Now);
                             }
                         });
                     }

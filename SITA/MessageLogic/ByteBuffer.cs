@@ -24,7 +24,7 @@
             ++currsor;
             --count;
         }
-        public void copy(byte[] target)
+        public void Сopy(byte[] target)
         {
             for (int i = 0; i < count; ++i)
             {

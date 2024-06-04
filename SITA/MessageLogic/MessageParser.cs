@@ -24,8 +24,9 @@ namespace SITA.MessageLogic
                 }
                 count -= dataLength;
                 byte[] bytes = new byte[dataLength + HEDER_SIZE];
-                buffer.copy(bytes);
-                stream.Read(bytes, HEDER_SIZE, dataLength);
+                buffer.Сopy(bytes);
+                if(dataLength > 0)
+                    stream.Read(bytes, HEDER_SIZE, dataLength);
                 result.Add(SITAMessage.Create(bytes));
                 buffer.count = 0;
             }
@@ -41,14 +42,14 @@ namespace SITA.MessageLogic
                     --count;
                     continue;
                 }
-                if (!CheckSubsection(buffer, appId, 0))
-                {
-                    buffer.Skip();
-                    continue;
-                }
-                return true;
+
+                if (CheckSubsection(buffer, appId, 0))
+                    return true;
+
+                buffer.Skip();
             }
-            return false;
+
+            return buffer.count == HEDER_SIZE && CheckSubsection(buffer, appId, 0);
         }
         private static bool CheckSubsection(ByteBuffer heder, byte[] subsection, int start)
         {
