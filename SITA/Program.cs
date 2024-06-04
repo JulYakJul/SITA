@@ -12,6 +12,10 @@ namespace SITA
         private static ByteBuffer buffer91 = new();
         private static ByteBuffer buffer92 = new();
 
+        private static CancellationTokenSource _cancellationTokenSource7991 { get; set; } = new();
+        private static CancellationTokenSource _cancellationTokenSource7992 { get; set; } = new();
+
+
         /// <summary>
         /// Источник токенов для остановки запущенного экземпляра системы при перезапуске
         /// </summary>
@@ -48,14 +52,17 @@ namespace SITA
 
         static async Task HandleTCPListener91(TcpClient client)
         {
-            while (!_сancellationTokenSource.Token.IsCancellationRequested)
+            _cancellationTokenSource7991.Cancel();
+            Thread.Sleep(100);
+            _cancellationTokenSource7991 = new();
+            while (!_cancellationTokenSource7991.Token.IsCancellationRequested)
             {
                 try
                 {
                     // Поток данных, которые мы получаем с клиентов
                     NetworkStream networkStream = client.GetStream();
 
-                    while (networkStream.DataAvailable)
+                    while (!_cancellationTokenSource7991.Token.IsCancellationRequested && networkStream.DataAvailable)
                     {
                         ReadStream(client, buffer91).ForEach(async message =>
                         {
@@ -97,14 +104,17 @@ namespace SITA
 
         static async Task HandleTCPListener92(TcpClient client)
         {
-            while (!_сancellationTokenSource.Token.IsCancellationRequested)
+            _cancellationTokenSource7992.Cancel();
+            Thread.Sleep(100);
+            _cancellationTokenSource7992 = new();
+            while (!_cancellationTokenSource7992.Token.IsCancellationRequested)
             {
                 try
                 {
                     // Поток данных, которые мы получаем с клиентов
                     NetworkStream networkStream = client.GetStream();
 
-                    while (networkStream.DataAvailable)
+                    while (!_cancellationTokenSource7992.Token.IsCancellationRequested && networkStream.DataAvailable)
                     {
                         ReadStream(client, buffer92).ForEach(async message =>
                         {
